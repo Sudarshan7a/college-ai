@@ -52,14 +52,14 @@ class CollegeRAG:
     """
     
     def __init__(self, 
-                 persist_dir: str = None,
-                 embedding_model: str = None,
+                 persist_dir: Optional[str] = None,
+                 embedding_model: Optional[str] = None,
                  llm_provider: str = "groq",
                  llm_model: str = "llama-3.3-70b-versatile",
                  use_reranker: bool = True,
                  auto_build: bool = True,
                  enable_logging: bool = True,
-                 confidence_threshold: float = 0.6):
+                 confidence_threshold: float = 0.6) -> None:
         """
         Initialize RAG system.
         
@@ -85,7 +85,7 @@ class CollegeRAG:
         self.enable_logging = enable_logging
         self.confidence_threshold = confidence_threshold
         if enable_logging:
-            self.logger = UnansweredQuestionLogger()
+            self.logger: Optional[UnansweredQuestionLogger] = UnansweredQuestionLogger()
             print(f"[INFO] Unanswered question logging enabled (threshold: {confidence_threshold})")
         else:
             self.logger = None
@@ -139,8 +139,21 @@ class CollegeRAG:
         print("\n[SUCCESS] RAG system ready!")
         print("="*60)
     
-    def _init_llm(self, provider: str, model: str):
-        """Initialize LLM based on provider."""
+    def _init_llm(self, provider: str, model: str) -> Any:
+        """
+        Initialize LLM based on provider.
+
+        Args:
+            provider: The LLM provider ('groq', 'openai', 'gemini')
+            model: The specific model name to use
+
+        Returns:
+            The initialized LLM object (LangChain chat model)
+
+        Raises:
+            ImportError: If the required package is not installed
+            ValueError: If the API key is missing or provider is unknown
+        """
         if provider.lower() == "groq":
             if not GROQ_AVAILABLE:
                 raise ImportError("Groq not available. Install: pip install langchain-groq")
