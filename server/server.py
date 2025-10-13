@@ -162,6 +162,7 @@ async def query_endpoint(request: QueryRequest):
     
     try:
         start_time = time.time()
+        print(f"\n[REQUEST] Query: '{request.query}' | Session: {request.session_id}")
         
         # Run the query (async wrapper for sync function)
         result = await asyncio.to_thread(
@@ -185,7 +186,12 @@ async def query_endpoint(request: QueryRequest):
             confidence_score=result.get("confidence_score", 0.0)
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"[ERROR] Query processing failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Query processing failed: {str(e)}"
