@@ -187,16 +187,16 @@ class CollegeRAG:
         else:
             raise ValueError(f"Unknown LLM provider: {provider}")
     
-    def search(self, query: str, top_k: int = 5) -> List[Dict]:
+    def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
         Search vector store for relevant documents.
         
         Args:
-            query: Search query
-            top_k: Number of results
+            query: Search query string
+            top_k: Number of results to return
             
         Returns:
-            List of result dictionaries
+            List of result dictionaries containing metadata and distances
         """
         return self.vectorstore.query(query, top_k=top_k)
     
@@ -205,11 +205,11 @@ class CollegeRAG:
         Get concatenated context from top results.
         
         Args:
-            query: Search query
-            top_k: Number of results
+            query: Search query string
+            top_k: Number of results to use for context
             
         Returns:
-            Concatenated text from results
+            Concatenated text from results, separated by newlines
         """
         results = self.search(query, top_k=top_k)
         texts = [r["metadata"].get("text", "") for r in results if r.get("metadata")]
