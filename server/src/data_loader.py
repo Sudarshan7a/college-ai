@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from langchain_community.document_loaders import TextLoader
 from langchain_core.documents import Document
 import sys
@@ -16,7 +16,7 @@ sys.path.insert(0, str(project_root))
 from src.config import EXTRACTED_DATA_DIR, CATEGORIES
 
 
-def load_all_documents(data_dir: str = None) -> List[Document]:
+def load_all_documents(data_dir: Optional[str] = None) -> List[Document]:
     """
     Load all text files from the categorized extracted data directory.
     Also loads any .txt files directly in the data_dir (like sample.txt).
@@ -237,7 +237,7 @@ def extract_company_from_url(url: str) -> str:
     return company_mapping.get(filename, filename.replace('.jpg', '').replace('.png', '').title())
 
 
-def load_documents_by_category(category: str, data_dir: str = None) -> List[Document]:
+def load_documents_by_category(category: str, data_dir: Optional[str] = None) -> List[Document]:
     """
     Load text files from a specific category only.
     
@@ -287,7 +287,7 @@ def load_documents_by_category(category: str, data_dir: str = None) -> List[Docu
     return documents
 
 
-def get_category_statistics(data_dir: str = None) -> Dict[str, Dict[str, int]]:
+def get_category_statistics(data_dir: Optional[str] = None) -> Dict[str, Dict[str, int]]:
     """
     Get count of text and CSV files in each category.
     
