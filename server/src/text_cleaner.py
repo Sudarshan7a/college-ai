@@ -66,7 +66,7 @@ class TextCleaner:
             cleaned = pattern.sub('', cleaned)
         
         # Normalize whitespace
-        cleaned = re.sub(r'\s+', ' ', cleaned)  # Multiple spaces to single
+        cleaned = re.sub(r'[ \t]+', ' ', cleaned)  # Multiple spaces/tabs to single space
         cleaned = re.sub(r'\n\s*\n\s*\n+', '\n\n', cleaned)  # Max 2 newlines
         
         # Remove excessive punctuation
