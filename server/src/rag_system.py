@@ -245,13 +245,18 @@ class CollegeRAG:
         
 
         
+        # Generate answer
+        answer = self._generate_answer(query, context)
+        
+    def _generate_answer(self, query: str, context: str) -> str:
+        """Generate answer using LLM."""
         # Create prompt
         prompt = self._create_prompt(query, context)
         
         # Get LLM response
         print("[INFO] Generating answer with LLM...")
         response = self.llm.invoke(prompt)
-        answer = response.content if hasattr(response, 'content') else str(response)
+        return response.content if hasattr(response, 'content') else str(response)
         
         # Calculate confidence score
         confidence_metrics = self._calculate_confidence(
