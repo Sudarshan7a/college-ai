@@ -248,16 +248,6 @@ class CollegeRAG:
         # Generate answer
         answer = self._generate_answer(query, context)
         
-    def _generate_answer(self, query: str, context: str) -> str:
-        """Generate answer using LLM."""
-        # Create prompt
-        prompt = self._create_prompt(query, context)
-        
-        # Get LLM response
-        print("[INFO] Generating answer with LLM...")
-        response = self.llm.invoke(prompt)
-        return response.content if hasattr(response, 'content') else str(response)
-        
         # Calculate confidence score
         confidence_metrics = self._calculate_confidence(
             distances=distances,
@@ -265,54 +255,10 @@ class CollegeRAG:
             llm_response=answer
         )
         
+        # Log interaction if needed
+        self._log_interaction(query, answer, confidence_metrics, results, session_id, message_index, message_id)
+        
         overall_confidence = confidence_metrics['overall_score']
-        llm_uncertainty = confidence_metrics.get('llm_uncertainty_indicators', [])
-        
-        # Smart logging: Only log if LLM explicitly shows uncertainty
-        # This filters out casual chit-chat like "hello" or "bye"
-        should_log = False
-        log_reason = None
-        
-        if self.enable_logging and self.logger:
-            # Priority 1: LLM explicitly says it doesn't know (ALWAYS log)
-            if llm_uncertainty and len(llm_uncertainty) > 0:
-                should_log = True
-                log_reason = "llm_explicit_uncertainty"
-            # Priority 2: Very low confidence AND no results (likely off-topic)
-            elif overall_confidence < -2.0 and len(results) < 2:
-                should_log = True
-                log_reason = "very_low_confidence_no_results"
-            # Priority 3: Low confidence AND question is substantive (>10 chars, has question mark or keywords)
-            elif overall_confidence < self.confidence_threshold:
-                query_lower = query.lower()
-                is_substantive = (
-                    len(query) > 10 and
-                    ('?' in query or 
-                     any(word in query_lower for word in ['what', 'where', 'when', 'why', 'how', 'which', 'who', 'tell', 'explain', 'describe']))
-                )
-                if is_substantive:
-                    should_log = True
-                    log_reason = "low_confidence_substantive_question"
-        
-        if should_log:
-            self.logger.log_question(
-                query=query,
-                model_response=answer,
-                detection_source=log_reason,
-                confidence_metrics=confidence_metrics,
-                retrieval_context={
-                    "num_docs_returned": len(results),
-                    "top_doc_ids": doc_ids,
-                    "query_embedding_similarities": [1 - d for d in distances],  # Convert distance to similarity
-                    "categories": categories
-                },
-                session_id=session_id,
-                message_index=message_index,
-                message_id=message_id,
-                model_version=f"{self.llm_provider}/{self.model_name}"
-            )
-            print(f"[UNANSWERED] {log_reason}: {query[:50]}...")
-            print(f"[WARNING] Confidence: {overall_confidence:.2f}, Uncertainty indicators: {len(llm_uncertainty)} - Question logged")
         
         result = {
             "answer": answer,
@@ -326,6 +272,73 @@ class CollegeRAG:
         
         return result
     
+    def _generate_answer(self, query: str, context: str) -> str:
+        """Generate answer using LLM."""
+        # Create prompt
+        prompt = self._create_prompt(query, context)
+        
+        # Get LLM response
+        print("[INFO] Generating answer with LLM...")
+        response = self.llm.invoke(prompt)
+        return response.content if hasattr(response, 'content') else str(response)
+
+    def _log_interaction(self, query: str, answer: str, confidence_metrics: Dict[str, Any], 
+                        results: List[Dict[str, Any]], session_id: Optional[str], 
+                        message_index: Optional[int], message_id: Optional[str]) -> None:
+        """Log interaction if needed based on confidence and uncertainty."""
+        overall_confidence = confidence_metrics['overall_score']
+        llm_uncertainty = confidence_metrics.get('llm_uncertainty_indicators', [])
+        
+        # Smart logging: Only log if LLM explicitly shows uncertainty
+        should_log = False
+        log_reason = None
+        
+        if self.enable_logging and self.logger:
+            # Priority 1: LLM explicitly says it doesn't know (ALWAYS log)
+            if llm_uncertainty and len(llm_uncertainty) > 0:
+                should_log = True
+                log_reason = "llm_explicit_uncertainty"
+            # Priority 2: Very low confidence AND no results (likely off-topic)
+            elif overall_confidence < -2.0 and len(results) < 2:
+                should_log = True
+                log_reason = "very_low_confidence_no_results"
+            # Priority 3: Low confidence AND question is substantive
+            elif overall_confidence < self.confidence_threshold:
+                query_lower = query.lower()
+                is_substantive = (
+                    len(query) > 10 and
+                    ('?' in query or 
+                     any(word in query_lower for word in ['what', 'where', 'when', 'why', 'how', 'which', 'who', 'tell', 'explain', 'describe']))
+                )
+                if is_substantive:
+                    should_log = True
+                    log_reason = "low_confidence_substantive_question"
+        
+        if should_log:
+            # Reconstruct context for logging
+            doc_ids = [r.get("metadata", {}).get("filename", "unknown") for r in results]
+            categories = list(set([r.get("metadata", {}).get("category", "unknown") for r in results]))
+            distances = [r.get("distance", 0) for r in results]
+            
+            self.logger.log_question(
+                query=query,
+                model_response=answer,
+                detection_source=log_reason,
+                confidence_metrics=confidence_metrics,
+                retrieval_context={
+                    "num_docs_returned": len(results),
+                    "top_doc_ids": doc_ids,
+                    "query_embedding_similarities": [1 - d for d in distances],
+                    "categories": categories
+                },
+                session_id=session_id,
+                message_index=message_index,
+                message_id=message_id,
+                model_version=f"{self.llm_provider}/{self.model_name}"
+            )
+            print(f"[UNANSWERED] {log_reason}: {query[:50]}...")
+            print(f"[WARNING] Confidence: {overall_confidence:.2f}, Uncertainty indicators: {len(llm_uncertainty)} - Question logged")
+
     def _handle_no_results(self, query: str, session_id: Optional[str], 
                           message_index: Optional[int], message_id: Optional[str]) -> Dict[str, Any]:
         """Handle case where no documents are found."""
