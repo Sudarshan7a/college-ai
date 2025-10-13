@@ -238,33 +238,41 @@ class CollegeRAG:
         results = self.search(query, top_k=top_k)
         
         if not results:
-            # No results found - log and return
-            if self.enable_logging and self.logger:
-                self.logger.log_question(
-                    query=query,
-                    model_response="I couldn't find any relevant information in the documents.",
-                    detection_source="auto_no_results",
-                    confidence_metrics={"overall_score": 0.0},
-                    retrieval_context={
-                        "num_docs_returned": 0,
-                        "top_doc_ids": [],
-                        "query_embedding_similarities": [],
-                        "categories": []
-                    },
-                    session_id=session_id,
-                    message_index=message_index,
-                    message_id=message_id,
-                    model_version=f"{self.llm_provider}/{self.model_name}"
-                )
-            
-            return {
-                "answer": "I couldn't find any relevant information in the documents.",
-                "sources": [],
-                "context": "",
-                "confidence_score": 0.0
-            }
+            return self._handle_no_results(query, session_id, message_index, message_id)
         
         # Build context
+        context, sources, doc_ids, categories, distances, rerank_scores = self._process_results(results)
+        
+    def _handle_no_results(self, query: str, session_id: Optional[str], 
+                          message_index: Optional[int], message_id: Optional[str]) -> Dict[str, Any]:
+        """Handle case where no documents are found."""
+        if self.enable_logging and self.logger:
+            self.logger.log_question(
+                query=query,
+                model_response="I couldn't find any relevant information in the documents.",
+                detection_source="auto_no_results",
+                confidence_metrics={"overall_score": 0.0},
+                retrieval_context={
+                    "num_docs_returned": 0,
+                    "top_doc_ids": [],
+                    "query_embedding_similarities": [],
+                    "categories": []
+                },
+                session_id=session_id,
+                message_index=message_index,
+                message_id=message_id,
+                model_version=f"{self.llm_provider}/{self.model_name}"
+            )
+        
+        return {
+            "answer": "I couldn't find any relevant information in the documents.",
+            "sources": [],
+            "context": "",
+            "confidence_score": 0.0
+        }
+
+    def _process_results(self, results: List[Dict[str, Any]]) -> tuple:
+        """Process search results into context and metadata."""
         context_parts = []
         sources = []
         distances = []
@@ -297,8 +305,9 @@ class CollegeRAG:
             if category not in categories:
                 categories.append(category)
             doc_ids.append(filename)
-        
+            
         context = "\n\n".join(context_parts)
+        return context, sources, doc_ids, categories, distances, rerank_scores
         
         # Create prompt
         prompt = self._create_prompt(query, context)
