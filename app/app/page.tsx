@@ -1,4 +1,5 @@
 import { ChatWidget } from "@/components/ChatWidget";
+import { SystemStatus } from "@/components/SystemStatus";
 
 export default function Home() {
   return (
@@ -13,6 +14,9 @@ export default function Home() {
 
       {/* Floating Chat Widget */}
       <ChatWidget />
+      
+      {/* System Status Panel */}
+      <SystemStatus />
     </div>
   );
 }
