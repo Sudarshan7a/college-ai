@@ -39,6 +39,7 @@ rag_system: Optional[CollegeRAG] = None
 server_start_time: float = 0
 query_count: int = 0
 total_response_time: float = 0.0
+query_history: list = []  # Store recent queries in memory
 
 
 @asynccontextmanager
@@ -180,6 +181,18 @@ async def query_endpoint(request: QueryRequest):
         # Update stats
         query_count += 1
         total_response_time += processing_time
+        
+        # Add to history (keep last 50)
+        history_entry = {
+            "query": request.query,
+            "answer": result["answer"][:200] + "..." if len(result["answer"]) > 200 else result["answer"],
+            "timestamp": time.time(),
+            "confidence": result.get("confidence_score", 0.0),
+            "session_id": request.session_id
+        }
+        query_history.insert(0, history_entry)
+        if len(query_history) > 50:
+            query_history.pop()
         
         return QueryResponse(
             answer=result["answer"],
@@ -333,6 +346,18 @@ async def stats_endpoint():
         uptime_seconds=uptime,
         vector_store_info=vector_store_info
     )
+
+
+@app.get("/api/history",
+         tags=["Stats"],
+         summary="Get recent query history")
+async def history_endpoint(limit: int = 10):
+    """
+    Get recent queries processed by the server.
+    Returns the last N queries from memory.
+    """
+    global query_history
+    return {"history": query_history[:limit]}
 
 
 @app.post("/api/feedback",
