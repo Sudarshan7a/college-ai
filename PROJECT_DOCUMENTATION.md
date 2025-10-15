@@ -609,24 +609,6 @@ graph TB
     style RAG fill:#e8f5e8
     style FAISS fill:#fff3e0
 ```
-
----
-
-## 🏆 Key Achievements
-
-- ✅ **190 Vector Embeddings** generated from 63 source documents
-- ✅ **3-Tier Smart Filtering** reduces noise by 60-80%
-- ✅ **Multi-LLM Integration** with seamless switching
-- ✅ **Real-time Confidence Scoring** for quality control
-- ✅ **Production-Ready API** with comprehensive documentation
-- ✅ **Modern Frontend** with responsive design and animations
-- ✅ **Admin Dashboard** for system monitoring and management
-- ✅ **Comprehensive Testing** with 62-question test suite
-
----
-
-## 📝 License
-
 MIT License - feel free to use and modify for your projects.
 
 ---
