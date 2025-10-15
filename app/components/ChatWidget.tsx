@@ -10,8 +10,12 @@ import {
   MessageCircle,
   ThumbsUp,
   ThumbsDown,
+  Trash2,
+  Copy,
+  Check,
 } from "lucide-react";
 import Image from "next/image";
+import { LoadingSkeleton } from "./LoadingSkeleton";
 
 type ChatState = "collapsed" | "normal" | "fullscreen";
 
@@ -53,6 +57,7 @@ export const ChatWidget = () => {
     () => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   );
   const [messageCounter, setMessageCounter] = useState(0);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -185,6 +190,29 @@ export const ChatWidget = () => {
         )
       );
     }
+  };
+
+  const handleCopy = async (content: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedId(messageId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy text:", err);
+    }
+  };
+
+  const handleClearChat = () => {
+    setMessages([
+      {
+        id: "greeting",
+        role: "assistant",
+        content: "👋 Hello! I'm your College AI Assistant. I can help you with information about:\n\n• 🎓 Admissions & Eligibility\n• 📚 Departments & Programs\n• 💼 Placements & Career\n• 🏫 Campus Facilities\n• 🎉 Events & Activities\n\nWhat would you like to know?",
+        timestamp: new Date(),
+      },
+    ]);
+    setInputValue("");
+    setError(null);
   };
 
   const toggleChatState = () => {
@@ -320,6 +348,16 @@ export const ChatWidget = () => {
               </div>
 
               <div className="flex items-center gap-2">
+                {/* Clear Chat Button */}
+                <button
+                  onClick={handleClearChat}
+                  className="p-2 rounded-lg hover:bg-white/20 transition-colors text-white"
+                  aria-label="Clear chat"
+                  title="Clear conversation"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+
                 {/* Size Toggle Button */}
                 <button
                   onClick={toggleChatState}
@@ -435,6 +473,19 @@ export const ChatWidget = () => {
                               }`}
                             />
                           </button>
+                          <div className="w-px h-4 bg-border my-auto mx-1" />
+                          <button
+                            onClick={() => handleCopy(message.content, message.id)}
+                            className="p-1.5 rounded-lg transition-all hover:bg-muted hover:scale-110"
+                            title="Copy to clipboard"
+                            aria-label="Copy message"
+                          >
+                            {copiedId === message.id ? (
+                              <Check className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Copy className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </button>
                         </div>
                       )}
                     </div>
@@ -443,30 +494,7 @@ export const ChatWidget = () => {
               </AnimatePresence>
 
               {/* Loading Indicator - Animated Dots */}
-              {isLoading && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex justify-start"
-                >
-                  <div className="bg-muted px-4 py-3 rounded-2xl">
-                    <div className="flex gap-1">
-                      <span
-                        className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce"
-                        style={{ animationDelay: "0ms" }}
-                      />
-                      <span
-                        className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce"
-                        style={{ animationDelay: "150ms" }}
-                      />
-                      <span
-                        className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce"
-                        style={{ animationDelay: "300ms" }}
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              )}
+              {isLoading && <LoadingSkeleton />}
 
               <div ref={messagesEndRef} />
             </div>
