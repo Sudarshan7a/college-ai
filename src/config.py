@@ -120,9 +120,9 @@ CATEGORIES = {
 }
 
 # Data directories
-DATA_DIR = "data"
-EXTRACTED_DATA_DIR = "data/extracted"
-CSV_LOG_FILE = "data/data_inventory.csv"
+DATA_DIR = "data/MyDrive/collegeAi/data"
+EXTRACTED_DATA_DIR = "data/MyDrive/collegeAi/data/extracted"
+CSV_LOG_FILE = "data/MyDrive/collegeAi/data/data_inventory.csv"
 
 # Similarity thresholds
 TEMPLATE_DUPLICATE_THRESHOLD = 0.85  # 85% similarity means duplicate
