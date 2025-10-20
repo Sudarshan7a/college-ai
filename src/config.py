@@ -4,6 +4,18 @@ Configuration file for data fetching operations.
 Customize sitemaps, filters, and output settings here.
 """
 
+import os
+from pathlib import Path
+
+# Detect environment (Colab vs Local)
+IS_COLAB = os.path.exists('/content/drive')
+
+# Set base path based on environment
+if IS_COLAB:
+    BASE_PATH = "/content/drive/MyDrive/collegeAi"
+else:
+    BASE_PATH = "."
+
 # Sitemap Index URL (automatically extracts all sitemaps)
 SITEMAP_INDEX = "https://sdit.ac.in/sitemap_index.xml"
 
@@ -120,9 +132,10 @@ CATEGORIES = {
 }
 
 # Data directories
-DATA_DIR = "drive/MyDrive/collegeAi/data"
-EXTRACTED_DATA_DIR = "drive/MyDrive/collegeAi/data/extracted"
-CSV_LOG_FILE = "drive/MyDrive/collegeAi/data/data_inventory.csv"
+# Data directories (automatically adapts to local or Colab environment)
+DATA_DIR = f"{BASE_PATH}/data"
+EXTRACTED_DATA_DIR = f"{BASE_PATH}/data/extracted"
+CSV_LOG_FILE = f"{BASE_PATH}/data/data_inventory.csv"
 
 # Similarity thresholds
 TEMPLATE_DUPLICATE_THRESHOLD = 0.85  # 85% similarity means duplicate
