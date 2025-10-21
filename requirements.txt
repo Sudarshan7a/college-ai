@@ -22,6 +22,11 @@ langchain-core>=0.1.0
 # Vector Database - FAISS for semantic search
 faiss-cpu>=1.7.4  # Use faiss-gpu if you have CUDA (much faster)
 
+# RAG (Retrieval-Augmented Generation) - LLM Integrations
+langchain-groq>=0.0.1  # For Groq LLMs
+# langchain-openai>=0.0.1  # Uncomment if using OpenAI
+# langchain-google-genai>=0.0.1  # Uncomment if using Google Gemini
+
 # Utilities
 python-dotenv>=1.0.0
 jupyter>=1.0.0
