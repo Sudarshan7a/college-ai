@@ -3,6 +3,7 @@
 ## What is RAG?
 
 **RAG (Retrieval-Augmented Generation)** combines:
+
 1. **Vector Search** - Find relevant documents from your database
 2. **LLM** - Generate natural answers based on those documents
 
@@ -39,6 +40,7 @@ GROQ_API_KEY=your_groq_api_key_here
 ```
 
 **Get API Keys:**
+
 - Groq: https://console.groq.com/
 - OpenAI: https://platform.openai.com/
 - Google: https://makersuite.google.com/
@@ -123,7 +125,7 @@ while True:
     if query.lower() in ['exit', 'quit', 'bye']:
         print("Goodbye!")
         break
-    
+
     answer = rag.chat(query)
     print(f"\nBot: {answer}\n")
 ```
@@ -200,6 +202,7 @@ class RAGSearch:
 ```
 
 **Issues:**
+
 - ❌ Duplicate vector store code
 - ❌ Uses old MiniLM model (lower accuracy)
 - ❌ No re-ranker (weaker relevance)
@@ -218,6 +221,7 @@ class CollegeRAG:
 ```
 
 **Benefits:**
+
 - ✅ No code duplication - reuses `src/vector_store.py`
 - ✅ Uses upgraded MPNet embeddings (768D)
 - ✅ Optional re-ranker for better accuracy
@@ -298,6 +302,7 @@ for src in result['sources'][:3]:  # Show top 3
 ### Issue: "GROQ_API_KEY not found"
 
 **Solution:** Create `.env` file with your API key:
+
 ```env
 GROQ_API_KEY=gsk_your_key_here
 ```
@@ -305,11 +310,13 @@ GROQ_API_KEY=gsk_your_key_here
 ### Issue: "Vector store not found"
 
 **Solution 1:** Auto-build (default):
+
 ```python
 rag = CollegeRAG(auto_build=True)  # Will build if missing
 ```
 
 **Solution 2:** Build manually first:
+
 ```powershell
 python src\vector_store.py  # Creates data/faiss_store
 ```
@@ -317,6 +324,7 @@ python src\vector_store.py  # Creates data/faiss_store
 ### Issue: Answers are inaccurate
 
 **Solutions:**
+
 1. Enable re-ranker: `use_reranker=True`
 2. Increase context: `top_k=7`
 3. Check if vector store has relevant data
@@ -325,6 +333,7 @@ python src\vector_store.py  # Creates data/faiss_store
 ### Issue: Too slow
 
 **Solutions:**
+
 1. Disable re-ranker: `use_reranker=False`
 2. Use faster model: `llm_model="llama-3.1-8b-instant"`
 3. Reduce top_k: `top_k=3`
@@ -334,11 +343,11 @@ python src\vector_store.py  # Creates data/faiss_store
 
 ## 📈 Performance Metrics
 
-| Configuration | Speed | Accuracy | Use Case |
-|--------------|-------|----------|----------|
-| **MPNet + Reranker + Groq** | ~1-2s | ⭐⭐⭐⭐⭐ | Production (recommended) |
-| **MPNet + Groq** | ~0.5-1s | ⭐⭐⭐⭐ | Fast production |
-| **MiniLM + Groq** | ~0.3-0.5s | ⭐⭐⭐ | Real-time chat |
+| Configuration               | Speed     | Accuracy   | Use Case                 |
+| --------------------------- | --------- | ---------- | ------------------------ |
+| **MPNet + Reranker + Groq** | ~1-2s     | ⭐⭐⭐⭐⭐ | Production (recommended) |
+| **MPNet + Groq**            | ~0.5-1s   | ⭐⭐⭐⭐   | Fast production          |
+| **MiniLM + Groq**           | ~0.3-0.5s | ⭐⭐⭐     | Real-time chat           |
 
 ---
 
@@ -357,7 +366,7 @@ rag = create_rag_system()
 def ask():
     data = request.json
     query = data.get('query')
-    
+
     result = rag.ask(query, top_k=5)
     return jsonify(result)
 
@@ -381,7 +390,7 @@ rag = create_rag_system()
 async def on_message(message):
     if message.author == client.user:
         return
-    
+
     if message.content.startswith('!ask'):
         query = message.content[5:]  # Remove '!ask '
         answer = rag.chat(query)
@@ -406,9 +415,9 @@ query = st.text_input("Ask a question:")
 if query:
     with st.spinner("Thinking..."):
         result = st.session_state.rag.ask(query, top_k=5)
-    
+
     st.write("**Answer:**", result['answer'])
-    
+
     with st.expander("View Sources"):
         for src in result['sources']:
             st.write(f"- {src['category']}/{src['filename']}")
@@ -434,24 +443,28 @@ If migrating from old `search.py`:
 
 - [ ] Install new dependencies: `pip install langchain-groq python-dotenv`
 - [ ] Create `.env` file with API keys
-- [ ] Replace `from src.vectorstore import FaissVectorStore` 
+- [ ] Replace `from src.vectorstore import FaissVectorStore`
       with `from src.rag_system import CollegeRAG`
 - [ ] Update initialization:
+
   ```python
   # Old
   rag = RAGSearch(persist_dir="faiss_store", embedding_model="all-MiniLM-L6-v2")
-  
+
   # New
   rag = CollegeRAG(use_reranker=True)  # Uses upgraded defaults
   ```
+
 - [ ] Update method calls:
+
   ```python
   # Old
   summary = rag.search_and_summarize(query, top_k=3)
-  
+
   # New
   answer = rag.chat(query, top_k=3)
   ```
+
 - [ ] Test with sample queries
 - [ ] Delete old `search.py` (no longer needed!)
 

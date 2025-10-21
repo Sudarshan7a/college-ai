@@ -5,6 +5,7 @@
 Re-ranking improves search quality by using a more accurate (but slower) model to re-order the top results from FAISS.
 
 **2-Stage Search:**
+
 1. **FAISS (Fast):** Retrieves top 10 candidates using vector similarity
 2. **CrossEncoder (Accurate):** Re-ranks those 10 to find the best 5
 
@@ -77,11 +78,11 @@ store.enable_reranker("cross-encoder/ms-marco-TinyBERT-L-2-v2")
 
 ## 📊 Performance Comparison
 
-| Method | Speed | Accuracy | Use Case |
-|--------|-------|----------|----------|
-| **FAISS Only** | ⚡⚡⚡ Very Fast | ⭐⭐ Good | Real-time search, high-volume queries |
-| **FAISS + Re-ranker** | ⚡⚡ Fast | ⭐⭐⭐⭐ Excellent | User-facing search, Q&A systems |
-| **CrossEncoder Only** | ⚡ Slow | ⭐⭐⭐⭐⭐ Best | Offline analysis |
+| Method                | Speed            | Accuracy           | Use Case                              |
+| --------------------- | ---------------- | ------------------ | ------------------------------------- |
+| **FAISS Only**        | ⚡⚡⚡ Very Fast | ⭐⭐ Good          | Real-time search, high-volume queries |
+| **FAISS + Re-ranker** | ⚡⚡ Fast        | ⭐⭐⭐⭐ Excellent | User-facing search, Q&A systems       |
+| **CrossEncoder Only** | ⚡ Slow          | ⭐⭐⭐⭐⭐ Best    | Offline analysis                      |
 
 **Recommendation:** Use FAISS + Re-ranker for production!
 
@@ -90,6 +91,7 @@ store.enable_reranker("cross-encoder/ms-marco-TinyBERT-L-2-v2")
 ## 🎯 How It Works
 
 ### FAISS Search (Approximate)
+
 ```
 Query: "What are placement statistics?"
 
@@ -100,6 +102,7 @@ FAISS Returns (by distance):
 ```
 
 ### After Re-ranking (Accurate)
+
 ```
 CrossEncoder Re-ranks:
 1. Rerank: 8.23 - "95% placements with 6.5 LPA average..."  ← Now on top!
@@ -124,22 +127,24 @@ initial_k = top_k * 2  # Get 10 results, rerank to top 5
 
 ### Model Sizes
 
-| Model | Size | Speed | Accuracy |
-|-------|------|-------|----------|
-| TinyBERT-L-2 | 17MB | Fastest | Good |
-| MiniLM-L-6 (default) | 80MB | Fast | Excellent |
-| MiniLM-L-12 | 125MB | Medium | Best |
+| Model                | Size  | Speed   | Accuracy  |
+| -------------------- | ----- | ------- | --------- |
+| TinyBERT-L-2         | 17MB  | Fastest | Good      |
+| MiniLM-L-6 (default) | 80MB  | Fast    | Excellent |
+| MiniLM-L-12          | 125MB | Medium  | Best      |
 
 ---
 
 ## 🧪 Testing
 
 ### Standalone Re-ranker Test
+
 ```powershell
 python src\reranker.py
 ```
 
 **Expected Output:**
+
 ```
 RE-RANKER DEMO
 ============================================================
@@ -166,6 +171,7 @@ Query: 'What are the placement statistics?'
 ```
 
 ### Full Vector Store Test
+
 ```powershell
 python src\vector_store.py
 ```
@@ -177,13 +183,16 @@ Look for **EXAMPLE 3** in the output showing re-ranker comparison.
 ## 🚨 Troubleshooting
 
 ### Issue: "Reranker not available"
+
 ```powershell
 # Ensure sentence-transformers is installed with CrossEncoder support
 pip install sentence-transformers>=2.2.0
 ```
 
 ### Issue: Re-ranking is slow
+
 **Solution:** Use smaller model or disable for high-volume queries
+
 ```python
 store.enable_reranker("cross-encoder/ms-marco-TinyBERT-L-2-v2")
 
@@ -192,12 +201,15 @@ store.disable_reranker()
 ```
 
 ### Issue: Re-ranking doesn't improve results
+
 **Possible causes:**
+
 1. FAISS embeddings already very good (MPNet is accurate)
 2. Query too vague
 3. Not enough candidates to re-rank
 
 **Solution:** Increase `initial_k`:
+
 ```python
 # In vector_store.py, query() method
 initial_k = top_k * 3  # Get 15 results, rerank to top 5
@@ -208,6 +220,7 @@ initial_k = top_k * 3  # Get 15 results, rerank to top 5
 ## 💡 Best Practices
 
 ### 1. **Enable Re-ranker for User Queries**
+
 ```python
 # Good for user-facing search
 store.enable_reranker()
@@ -215,6 +228,7 @@ results = store.query(user_question, top_k=5)
 ```
 
 ### 2. **Disable for Batch Processing**
+
 ```python
 # Good for processing 1000s of queries
 store.disable_reranker()
@@ -223,6 +237,7 @@ for query in large_query_list:
 ```
 
 ### 3. **Use Per-Query Control**
+
 ```python
 # Enable globally but override for specific queries
 store.enable_reranker()
@@ -235,6 +250,7 @@ results = store.query("simple lookup", top_k=5, rerank=False)
 ```
 
 ### 4. **Cache Re-ranker Model**
+
 ```python
 # Load once at startup (already done in vector_store.py)
 store = FaissVectorStore()
@@ -253,10 +269,12 @@ for query in user_queries:
 ### Typical Results
 
 **Before Re-ranking:**
+
 - Query: "What are placement statistics?"
 - Top result: Distance 0.92 - "CSE department overview" (wrong!)
 
 **After Re-ranking:**
+
 - Query: "What are placement statistics?"
 - Top result: Rerank 8.5 - "95% placements with 6.5 LPA" (correct!)
 
@@ -267,12 +285,14 @@ for query in user_queries:
 ## 🎓 When to Use Re-ranking
 
 ### ✅ Use Re-ranking When:
+
 - User-facing Q&A systems
 - Chatbot responses need high accuracy
 - Query relevance is critical
 - Processing < 100 queries/second
 
 ### ❌ Skip Re-ranking When:
+
 - Real-time search (< 50ms required)
 - Batch processing 1000s of queries
 - FAISS embeddings already very accurate
