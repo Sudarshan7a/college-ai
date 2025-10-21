@@ -37,7 +37,7 @@ class QueryResponse(BaseModel):
     query: str = Field(..., description="Original query")
     sources: List[Source] = Field(default_factory=list, description="Source documents used")
     processing_time: float = Field(..., description="Processing time in seconds")
-    model_used: str = Field(default="llama-3.1-8b-instant", description="LLM model used")
+    model_used: str = Field(default="llama-3.3-70b-versatile", description="LLM model used")
     
     class Config:
         json_schema_extra = {
@@ -54,7 +54,7 @@ class QueryResponse(BaseModel):
                     }
                 ],
                 "processing_time": 1.234,
-                "model_used": "llama-3.1-8b-instant"
+                "model_used": "llama-3.3-70b-versatile"
             }
         }
 
