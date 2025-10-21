@@ -13,11 +13,13 @@ All FastAPI backend implementation is complete and committed to the `feature/fas
 ## 🚀 How to Start the Server
 
 ### Method 1: Direct Python
+
 ```powershell
 python server.py
 ```
 
 ### Method 2: Uvicorn
+
 ```powershell
 uvicorn server:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -27,11 +29,13 @@ uvicorn server:app --reload --host 0.0.0.0 --port 8000
 **Important:** The first time you start the server, TensorFlow will take 30-60 seconds to load. This is normal on Windows.
 
 You'll see:
+
 1. "College AI Project v0.1.0 initialized successfully!"
 2. Then a pause (TensorFlow loading - this is normal!)
 3. Then the startup sequence will continue
 
 ### What You Should See:
+
 ```
 ============================================================
 🚀 COLLEGE AI BACKEND - STARTING UP
@@ -60,12 +64,14 @@ You'll see:
 Once the server is running:
 
 ### Terminal 1 (Server):
+
 ```powershell
 python server.py
 # Wait for "SERVER READY FOR REQUESTS!"
 ```
 
 ### Terminal 2 (Tests):
+
 ```powershell
 python test_api.py
 ```
@@ -73,10 +79,12 @@ python test_api.py
 ### Or Test Manually:
 
 **Browser:**
+
 - Interactive docs: http://localhost:8000/docs
 - Health check: http://localhost:8000/api/health
 
 **PowerShell:**
+
 ```powershell
 # Health check
 Invoke-RestMethod http://localhost:8000/api/health
@@ -93,13 +101,13 @@ Invoke-RestMethod -Method Post -Uri "http://localhost:8000/api/query" `
 
 ## 📊 API Endpoints
 
-| Endpoint | Method | Purpose | Response Time |
-|----------|--------|---------|---------------|
-| `/` | GET | Server info | ~10ms |
-| `/api/health` | GET | Health check | ~10ms |
-| `/api/search` | POST | Vector search only | ~100-300ms |
-| `/api/query` | POST | Full RAG (with LLM) | ~1-2s |
-| `/api/stats` | GET | Server statistics | ~10ms |
+| Endpoint      | Method | Purpose             | Response Time |
+| ------------- | ------ | ------------------- | ------------- |
+| `/`           | GET    | Server info         | ~10ms         |
+| `/api/health` | GET    | Health check        | ~10ms         |
+| `/api/search` | POST   | Vector search only  | ~100-300ms    |
+| `/api/query`  | POST   | Full RAG (with LLM) | ~1-2s         |
+| `/api/stats`  | GET    | Server statistics   | ~10ms         |
 
 ## 🔗 Next Steps
 
@@ -118,15 +126,18 @@ Invoke-RestMethod -Method Post -Uri "http://localhost:8000/api/query" `
 ## 🐛 Troubleshooting
 
 ### Server won't start
+
 - Check if port 8000 is already in use
 - Verify `.env` file exists with `GROQ_API_KEY`
 - Ensure `data/faiss_store/` exists (run `python src/vector_store.py` first)
 
 ### "Models not loaded" error
+
 - Server is still starting up - wait 30-60 seconds
 - Check terminal for error messages
 
 ### Import errors
+
 ```powershell
 pip install fastapi uvicorn[standard] python-multipart aiofiles
 ```

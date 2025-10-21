@@ -53,7 +53,7 @@ class CollegeRAG:
                  persist_dir: str = None,
                  embedding_model: str = None,
                  llm_provider: str = "groq",
-                 llm_model: str = "gemma2-9b-it",
+                 llm_model: str = "llama-3.1-8b-instant",
                  use_reranker: bool = True,
                  auto_build: bool = True):
         """
@@ -284,7 +284,7 @@ Answer:"""
 
 # Convenience function
 def create_rag_system(llm_provider: str = "groq",
-                     llm_model: str = "gemma2-9b-it",
+                     llm_model: str = "llama-3.1-8b-instant",
                      use_reranker: bool = True) -> CollegeRAG:
     """
     Create RAG system with default settings.
@@ -313,7 +313,7 @@ if __name__ == "__main__":
     # Create RAG system (uses upgraded vector store with MPNet + re-ranker)
     rag = create_rag_system(
         llm_provider="groq",
-        llm_model="gemma2-9b-it",
+        llm_model="llama-3.1-8b-instant",
         use_reranker=True
     )
     
