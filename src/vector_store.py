@@ -85,6 +85,16 @@ class FaissVectorStore:
         print(f"[INFO] Vector store initialized")
         print(f"[INFO] Persist directory: {self.persist_dir}")
     
+    @property
+    def total_vectors(self) -> int:
+        """Get total number of vectors in the index"""
+        return self.index.ntotal if self.index else 0
+    
+    @property
+    def dimension(self) -> int:
+        """Get dimension of vectors in the index"""
+        return self.index.d if self.index else 0
+    
     def build_from_documents(self, documents: List[Document], clean_text: bool = True) -> None:
         """
         Build FAISS index from documents.

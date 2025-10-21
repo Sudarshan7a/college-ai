@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
         rag_system = CollegeRAG(use_reranker=True)
         
         print("\n✅ RAG system loaded successfully!")
-        print(f"  📊 Vector Store: {rag_system.vector_store.total_vectors} vectors")
+        print(f"  📊 Vector Store: {rag_system.vectorstore.total_vectors} vectors")
         print(f"  🎯 Re-ranker: Enabled")
         print(f"  🤖 LLM: {rag_system.model_name}")
         
@@ -253,10 +253,10 @@ async def health_check():
     
     if rag_system:
         try:
-            vector_store_ready = rag_system.vector_store is not None
+            vector_store_ready = rag_system.vectorstore is not None
             llm_ready = rag_system.llm is not None
             if vector_store_ready:
-                total_vectors = rag_system.vector_store.total_vectors
+                total_vectors = rag_system.vectorstore.total_vectors
         except Exception:
             pass
     
@@ -290,12 +290,12 @@ async def stats_endpoint():
     avg_response_time = total_response_time / query_count if query_count > 0 else 0.0
     
     vector_store_info = {}
-    if rag_system and rag_system.vector_store:
+    if rag_system and rag_system.vectorstore:
         vector_store_info = {
-            "total_vectors": rag_system.vector_store.total_vectors,
-            "dimension": rag_system.vector_store.dimension,
-            "model": rag_system.vector_store.embedding_model,
-            "reranker_enabled": rag_system.vector_store.reranker is not None
+            "total_vectors": rag_system.vectorstore.total_vectors,
+            "dimension": rag_system.vectorstore.dimension,
+            "model": rag_system.vectorstore.embedding_model,
+            "reranker_enabled": rag_system.vectorstore.reranker is not None
         }
     
     return StatsResponse(

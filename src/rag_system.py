@@ -117,6 +117,8 @@ class CollegeRAG:
         
         # Initialize LLM
         print(f"\n[STEP 2] Initializing LLM: {llm_provider} - {llm_model}")
+        self.llm_provider = llm_provider
+        self.model_name = llm_model
         self.llm = self._init_llm(llm_provider, llm_model)
         
         print("\n[SUCCESS] RAG system ready!")
