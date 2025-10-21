@@ -26,6 +26,14 @@ from src.data_loader import load_all_documents, load_documents_by_category
 from src.config import BASE_PATH, EXTRACTED_DATA_DIR
 from src.text_cleaner import clean_and_enhance_documents
 
+# Optional: Import reranker (lazy load to save memory if not used)
+try:
+    from src.reranker import SemanticReranker
+    RERANKER_AVAILABLE = True
+except ImportError:
+    RERANKER_AVAILABLE = False
+    print("[WARNING] Reranker not available. Install: pip install sentence-transformers")
+
 
 # Configuration
 FAISS_STORE_DIR = f"{BASE_PATH}/data/faiss_store"
@@ -69,6 +77,10 @@ class FaissVectorStore:
         # Load model for querying
         print(f"[INFO] Loading embedding model: {embedding_model}")
         self.model = SentenceTransformer(embedding_model)
+        
+        # Optional reranker (lazy loaded on first use)
+        self.reranker = None
+        self.use_reranker = False
         
         print(f"[INFO] Vector store initialized")
         print(f"[INFO] Persist directory: {self.persist_dir}")
@@ -236,19 +248,45 @@ class FaissVectorStore:
         
         return results
     
-    def query(self, query_text: str, top_k: int = 5) -> List[Dict]:
+    def enable_reranker(self, model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2") -> None:
+        """
+        Enable re-ranking of search results with CrossEncoder.
+        
+        Args:
+            model_name: CrossEncoder model to use for re-ranking
+        """
+        if not RERANKER_AVAILABLE:
+            raise ImportError("Reranker not available. Install sentence-transformers with CrossEncoder support.")
+        
+        if self.reranker is None:
+            print(f"[INFO] Enabling re-ranker: {model_name}")
+            self.reranker = SemanticReranker(model_name=model_name)
+        
+        self.use_reranker = True
+        print("[SUCCESS] Re-ranker enabled!")
+    
+    def disable_reranker(self) -> None:
+        """Disable re-ranking (use only FAISS distances)."""
+        self.use_reranker = False
+        print("[INFO] Re-ranker disabled")
+    
+    def query(self, query_text: str, top_k: int = 5, rerank: bool = None) -> List[Dict]:
         """
         Query vector store with text.
         
         Args:
             query_text: Search query text
             top_k: Number of results to return
+            rerank: Whether to use re-ranker (if None, uses self.use_reranker setting)
             
         Returns:
-            List of result dictionaries
+            List of result dictionaries (optionally re-ranked)
         """
         if self.index is None:
             raise ValueError("No index loaded. Call build_from_documents() or load() first.")
+        
+        # Determine if we should rerank
+        should_rerank = rerank if rerank is not None else self.use_reranker
         
         print(f"\n[INFO] Querying: '{query_text}'")
         
@@ -256,10 +294,19 @@ class FaissVectorStore:
         query_embedding = self.model.encode([query_text], normalize_embeddings=True)
         query_embedding = query_embedding.astype('float32')
         
-        # Search
-        results = self.search(query_embedding, top_k=top_k)
+        # Get more results if re-ranking (e.g., top 10 for re-ranking to top 5)
+        initial_k = top_k * 2 if should_rerank and self.reranker else top_k
         
-        print(f"[INFO] Found {len(results)} results")
+        # Search with FAISS
+        results = self.search(query_embedding, top_k=initial_k)
+        
+        print(f"[INFO] Found {len(results)} initial results")
+        
+        # Re-rank if enabled
+        if should_rerank and self.reranker:
+            print(f"[INFO] Re-ranking with CrossEncoder...")
+            results = self.reranker.rerank(query_text, results, top_k=top_k)
+            print(f"[SUCCESS] Re-ranked to top {len(results)} results")
         
         return results
     
@@ -416,19 +463,50 @@ if __name__ == "__main__":
                 print(f"   📄 File: {meta.get('filename', 'N/A')}")
                 print(f"   📝 Text: {meta.get('text', '')[:200]}...")
         
-        # Example 3: Load existing store
+        # Example 3: Test with re-ranker
         print("\n" + "="*60)
-        print("EXAMPLE 3: Load existing vector store")
+        print("EXAMPLE 3: Compare with and without re-ranker")
+        print("="*60)
+        
+        test_query = "What are the placement statistics and average package?"
+        
+        # Without reranker
+        print(f"\n🔍 Query (FAISS only): '{test_query}'")
+        results_no_rerank = store.query(test_query, top_k=5, rerank=False)
+        
+        print("\n📊 FAISS Results:")
+        for i, r in enumerate(results_no_rerank, 1):
+            print(f"{i}. Distance: {r['distance']:.3f} | {r['metadata']['category']}")
+            print(f"   {r['metadata']['text'][:100]}...")
+        
+        # With reranker
+        print(f"\n🔍 Query (FAISS + Re-ranker): '{test_query}'")
+        store.enable_reranker()  # Enable re-ranking
+        results_reranked = store.query(test_query, top_k=5, rerank=True)
+        
+        print("\n✨ Re-ranked Results:")
+        for i, r in enumerate(results_reranked, 1):
+            rerank_score = r.get('rerank_score', 'N/A')
+            score_str = f"{rerank_score:.4f}" if isinstance(rerank_score, float) else rerank_score
+            print(f"{i}. Rerank: {score_str} | FAISS: {r['distance']:.3f} | {r['metadata']['category']}")
+            print(f"   {r['metadata']['text'][:100]}...")
+        
+        # Example 4: Load existing store
+        print("\n" + "="*60)
+        print("EXAMPLE 4: Load existing vector store")
         print("="*60)
         
         new_store = FaissVectorStore()
         new_store.load()
+        new_store.enable_reranker()  # Enable reranker on loaded store
         
-        results = new_store.query("placement records and job opportunities", top_k=2)
-        print(f"\n� Search results from loaded store:")
+        results = new_store.query("placement records and job opportunities", top_k=3)
+        print(f"\n📊 Search results from loaded store:")
         for i, result in enumerate(results, 1):
             meta = result['metadata']
-            print(f"\n{i}. Distance: {result['distance']:.3f}")
+            rerank_score = result.get('rerank_score', 'N/A')
+            score_str = f"{rerank_score:.4f}" if isinstance(rerank_score, float) else "N/A"
+            print(f"\n{i}. Rerank: {score_str} | Distance: {result['distance']:.3f}")
             print(f"   Category: {meta.get('category', 'N/A')}")
             print(f"   Text: {meta.get('text', '')[:150]}...")
         
