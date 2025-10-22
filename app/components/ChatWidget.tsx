@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Maximize2, Minimize2, X, MessageCircle, ThumbsUp, ThumbsDown } from "lucide-react";
+import Image from "next/image";
 
 type ChatState = "collapsed" | "normal" | "fullscreen";
 
@@ -276,11 +277,20 @@ export const ChatWidget = () => {
         {/* Expanded State - Chat Interface */}
         {chatState !== "collapsed" && (
           <div className="flex flex-col h-full">
-            {/* Header */}
+            {/* Header with Logo */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(217_91%_60%)]">
               <div className="flex items-center gap-3">
-                <MessageCircle className="w-6 h-6 text-white" />
-                <h2 className="text-lg font-semibold text-white">College AI Assistant</h2>
+                <Image 
+                  src="/logo.png" 
+                  alt="College Logo" 
+                  width={40} 
+                  height={40}
+                  className="rounded-lg"
+                />
+                <div>
+                  <h2 className="text-lg font-semibold text-white leading-tight">College AI Assistant</h2>
+                  <p className="text-xs text-white/70">Ask me anything</p>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
