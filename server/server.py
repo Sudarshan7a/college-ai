@@ -47,7 +47,17 @@ async def lifespan(app: FastAPI):
         print("  ⏳ Loading re-ranker...")
         print("  ⏳ Initializing LLM...")
         
-        rag_system = CollegeRAG(use_reranker=True)
+        # Read LLM provider from environment (defaults to groq)
+        llm_provider = os.getenv("LLM_PROVIDER", "groq").lower()
+        llm_model = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile" if llm_provider == "groq" else "gemini-1.5-flash")
+        
+        print(f"  🎯 Using: {llm_provider.upper()} - {llm_model}")
+        
+        rag_system = CollegeRAG(
+            use_reranker=True,
+            llm_provider=llm_provider,
+            llm_model=llm_model
+        )
         
         # Verify RAG system loaded correctly
         if rag_system is None:
