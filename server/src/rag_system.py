@@ -462,9 +462,6 @@ class CollegeRAG:
                 found_phrases.append(phrase)
         
         return found_phrases
-            result["sources"] = sources
-        
-        return result
     
     def _create_prompt(self, query: str, context: str) -> str:
         """Create prompt for LLM."""
