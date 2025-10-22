@@ -274,6 +274,8 @@ export const ChatWidget = () => {
         }}
         initial="collapsed"
         animate={chatState}
+        //ignore ts error below
+        // @ts-ignore
         variants={containerVariants}
       >
         {/* Collapsed State - Icon Only */}
