@@ -2,7 +2,15 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Maximize2, Minimize2, X, MessageCircle, ThumbsUp, ThumbsDown } from "lucide-react";
+import {
+  Send,
+  Maximize2,
+  Minimize2,
+  X,
+  MessageCircle,
+  ThumbsUp,
+  ThumbsDown,
+} from "lucide-react";
 import Image from "next/image";
 
 type ChatState = "collapsed" | "normal" | "fullscreen";
@@ -13,15 +21,15 @@ interface Message {
   content: string;
   timestamp: Date;
   query?: string; // Store the query for feedback
-  feedback?: 'helpful' | 'not_helpful' | null;
+  feedback?: "helpful" | "not_helpful" | null;
 }
 
 /**
  * ChatWidget Component
- * 
+ *
  * A floating chat interface with smooth animations.
  * Features three states: collapsed (icon), normal (chat window), fullscreen.
- * 
+ *
  * Animation Strategy:
  * - Uses Framer Motion variants for declarative state transitions
  * - GPU-accelerated transforms (width, height, borderRadius)
@@ -34,7 +42,9 @@ export const ChatWidget = () => {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const [sessionId] = useState(
+    () => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  );
   const [messageCounter, setMessageCounter] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,20 +78,20 @@ export const ChatWidget = () => {
     setError(null);
 
     const currentMessageIndex = messageCounter;
-    setMessageCounter(prev => prev + 1);
+    setMessageCounter((prev) => prev + 1);
 
     try {
       // Send to FastAPI backend
       const response = await fetch("http://localhost:8000/api/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           query: userMessage.content,
           top_k: 3,
           include_sources: false,
           session_id: sessionId,
           message_index: currentMessageIndex,
-          message_id: userMessage.id
+          message_id: userMessage.id,
         }),
       });
 
@@ -90,7 +100,7 @@ export const ChatWidget = () => {
       }
 
       const data = await response.json();
-      
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -102,9 +112,10 @@ export const ChatWidget = () => {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Failed to send message";
+      const errorMsg =
+        err instanceof Error ? err.message : "Failed to send message";
       setError(errorMsg);
-      
+
       // Add error message to chat
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -125,7 +136,10 @@ export const ChatWidget = () => {
     }
   };
 
-  const handleFeedback = async (messageId: string, feedbackType: 'helpful' | 'not_helpful') => {
+  const handleFeedback = async (
+    messageId: string,
+    feedbackType: "helpful" | "not_helpful"
+  ) => {
     // Update UI optimistically
     setMessages((prev) =>
       prev.map((msg) =>
@@ -134,7 +148,7 @@ export const ChatWidget = () => {
     );
 
     try {
-      const message = messages.find(m => m.id === messageId);
+      const message = messages.find((m) => m.id === messageId);
       if (!message || !message.query) return;
 
       const response = await fetch("http://localhost:8000/api/feedback", {
@@ -142,7 +156,7 @@ export const ChatWidget = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message_id: messageId,
-          helpful: feedbackType === 'helpful',
+          helpful: feedbackType === "helpful",
           query: message.query,
           response: message.content,
           session_id: sessionId,
@@ -178,7 +192,7 @@ export const ChatWidget = () => {
 
   /**
    * Animation Variants
-   * 
+   *
    * Uses easeInOut for smooth, natural transitions.
    * Width/height changes are GPU-accelerated.
    * BorderRadius morphs create elegant state changes.
@@ -188,62 +202,62 @@ export const ChatWidget = () => {
       width: "64px",
       height: "64px",
       borderRadius: "32px",
-      transition: { 
-        duration: 0.3, 
-        ease: [0.4, 0, 0.2, 1] // Custom cubic-bezier for buttery-smooth
+      transition: {
+        duration: 0.3,
+        ease: [0.4, 0, 0.2, 1], // Custom cubic-bezier for buttery-smooth
       },
     },
     normal: {
       width: "min(420px, 90vw)",
       height: "min(600px, 80vh)",
       borderRadius: "16px",
-      transition: { 
-        duration: 0.3, 
+      transition: {
+        duration: 0.3,
         ease: [0.4, 0, 0.2, 1],
         // Stagger width and height slightly for more natural feel
         width: { duration: 0.3 },
-        height: { duration: 0.3, delay: 0.05 }
+        height: { duration: 0.3, delay: 0.05 },
       },
     },
     fullscreen: {
       width: "100vw",
       height: "100vh",
       borderRadius: "0px",
-      transition: { 
-        duration: 0.3, 
-        ease: [0.4, 0, 0.2, 1]
+      transition: {
+        duration: 0.3,
+        ease: [0.4, 0, 0.2, 1],
       },
     },
   };
 
   /**
    * Message Animation Variants
-   * 
+   *
    * Slide-up with fade creates polished message appearance.
    * Exit animations prevent layout shift.
    */
   const messageVariants = {
-    initial: { 
-      opacity: 0, 
+    initial: {
+      opacity: 0,
       y: 20,
-      scale: 0.95
+      scale: 0.95,
     },
-    animate: { 
-      opacity: 1, 
+    animate: {
+      opacity: 1,
       y: 0,
       scale: 1,
       transition: {
         duration: 0.2,
-        ease: "easeOut"
-      }
+        ease: "easeOut",
+      },
     },
-    exit: { 
-      opacity: 0, 
+    exit: {
+      opacity: 0,
       scale: 0.95,
       transition: {
-        duration: 0.15
-      }
-    }
+        duration: 0.15,
+      },
+    },
   };
 
   return (
@@ -253,9 +267,10 @@ export const ChatWidget = () => {
         style={{
           bottom: chatState === "fullscreen" ? 0 : 24,
           right: chatState === "fullscreen" ? 0 : 24,
-          background: chatState === "collapsed" 
-            ? "linear-gradient(135deg, hsl(262 83% 58%), hsl(217 91% 60%))"
-            : "hsl(var(--card))",
+          background:
+            chatState === "collapsed"
+              ? "linear-gradient(135deg, hsl(262 83% 58%), hsl(217 91% 60%))"
+              : "hsl(var(--card))",
         }}
         initial="collapsed"
         animate={chatState}
@@ -280,15 +295,17 @@ export const ChatWidget = () => {
             {/* Header with Logo */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(217_91%_60%)]">
               <div className="flex items-center gap-3">
-                <Image 
-                  src="/logo.png" 
-                  alt="College Logo" 
-                  width={40} 
+                <Image
+                  src="/logo.png"
+                  alt="College Logo"
+                  width={40}
                   height={40}
                   className="rounded-lg"
                 />
                 <div>
-                  <h2 className="text-lg font-semibold text-white leading-tight">College AI Assistant</h2>
+                  <h2 className="text-lg font-semibold text-white leading-tight">
+                    College AI Assistant
+                  </h2>
                   <p className="text-xs text-white/70">Ask me anything</p>
                 </div>
               </div>
@@ -298,7 +315,9 @@ export const ChatWidget = () => {
                 <button
                   onClick={toggleChatState}
                   className="p-2 rounded-lg hover:bg-white/20 transition-colors text-white"
-                  aria-label={chatState === "normal" ? "Maximize" : "Normal size"}
+                  aria-label={
+                    chatState === "normal" ? "Maximize" : "Normal size"
+                  }
                 >
                   {chatState === "normal" ? (
                     <Maximize2 className="w-5 h-5" />
@@ -332,7 +351,8 @@ export const ChatWidget = () => {
                       Welcome to College AI
                     </h3>
                     <p className="text-muted-foreground text-sm">
-                      Ask me anything about the college, programs, admissions, or placements
+                      Ask me anything about the college, programs, admissions,
+                      or placements
                     </p>
                   </motion.div>
                 )}
@@ -356,62 +376,69 @@ export const ChatWidget = () => {
                             : "bg-muted text-foreground"
                         }`}
                         style={{
-                          boxShadow: message.role === "user" 
-                            ? "0 10px 40px -10px hsl(262 83% 58% / 0.2)" 
-                            : "0 4px 20px -2px hsl(240 10% 15% / 0.1)",
+                          boxShadow:
+                            message.role === "user"
+                              ? "0 10px 40px -10px hsl(262 83% 58% / 0.2)"
+                              : "0 4px 20px -2px hsl(240 10% 15% / 0.1)",
                         }}
                       >
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">
                           {message.content}
                         </p>
-                        <span className={`text-xs mt-1 block ${
-                          message.role === "user" 
-                            ? "text-white/70" 
-                            : "text-muted-foreground"
-                        }`}>
-                          {message.timestamp.toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
+                        <span
+                          className={`text-xs mt-1 block ${
+                            message.role === "user"
+                              ? "text-white/70"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {message.timestamp.toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </span>
                       </div>
-                      
+
                       {/* Feedback buttons for assistant messages */}
                       {message.role === "assistant" && (
                         <div className="flex gap-2 ml-1">
                           <button
-                            onClick={() => handleFeedback(message.id, 'helpful')}
+                            onClick={() =>
+                              handleFeedback(message.id, "helpful")
+                            }
                             className={`p-1.5 rounded-lg transition-all hover:bg-muted ${
-                              message.feedback === 'helpful' 
-                                ? 'bg-green-100 dark:bg-green-900/30' 
-                                : 'hover:scale-110'
+                              message.feedback === "helpful"
+                                ? "bg-green-100 dark:bg-green-900/30"
+                                : "hover:scale-110"
                             }`}
                             title="Helpful"
                             aria-label="Mark as helpful"
                           >
-                            <ThumbsUp 
+                            <ThumbsUp
                               className={`w-4 h-4 ${
-                                message.feedback === 'helpful'
-                                  ? 'fill-green-600 text-green-600 dark:fill-green-400 dark:text-green-400'
-                                  : 'text-muted-foreground'
+                                message.feedback === "helpful"
+                                  ? "fill-green-600 text-green-600 dark:fill-green-400 dark:text-green-400"
+                                  : "text-muted-foreground"
                               }`}
                             />
                           </button>
                           <button
-                            onClick={() => handleFeedback(message.id, 'not_helpful')}
+                            onClick={() =>
+                              handleFeedback(message.id, "not_helpful")
+                            }
                             className={`p-1.5 rounded-lg transition-all hover:bg-muted ${
-                              message.feedback === 'not_helpful' 
-                                ? 'bg-red-100 dark:bg-red-900/30' 
-                                : 'hover:scale-110'
+                              message.feedback === "not_helpful"
+                                ? "bg-red-100 dark:bg-red-900/30"
+                                : "hover:scale-110"
                             }`}
                             title="Not helpful"
                             aria-label="Mark as not helpful"
                           >
-                            <ThumbsDown 
+                            <ThumbsDown
                               className={`w-4 h-4 ${
-                                message.feedback === 'not_helpful'
-                                  ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400'
-                                  : 'text-muted-foreground'
+                                message.feedback === "not_helpful"
+                                  ? "fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400"
+                                  : "text-muted-foreground"
                               }`}
                             />
                           </button>
@@ -431,9 +458,18 @@ export const ChatWidget = () => {
                 >
                   <div className="bg-muted px-4 py-3 rounded-2xl">
                     <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <span className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <span
+                        className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce"
+                        style={{ animationDelay: "0ms" }}
+                      />
+                      <span
+                        className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce"
+                        style={{ animationDelay: "150ms" }}
+                      />
+                      <span
+                        className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce"
+                        style={{ animationDelay: "300ms" }}
+                      />
                     </div>
                   </div>
                 </motion.div>

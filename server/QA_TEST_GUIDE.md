@@ -25,6 +25,7 @@ python test_comprehensive_qa.py
 ### Step 3: Check Results
 
 The script will:
+
 1. Test **all 62 questions** across 9 categories
 2. Generate a detailed markdown report: `test_results_YYYYMMDD_HHMMSS.md`
 3. Show summary in console
@@ -84,4 +85,4 @@ After running the test, check:
 
 ---
 
-*Happy Testing! 🧪*
+_Happy Testing! 🧪_
