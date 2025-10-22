@@ -20,7 +20,9 @@ import uvicorn
 from src.rag_system import CollegeRAG
 from src.api_models import (
     QueryRequest, QueryResponse, SearchRequest, SearchResponse,
-    HealthResponse, StatsResponse, ErrorResponse, Source
+    HealthResponse, StatsResponse, ErrorResponse, Source,
+    FeedbackRequest, FeedbackResponse,
+    UnansweredQuestionsResponse, UnansweredStatsResponse
 )
 
 # Global variables
@@ -133,7 +135,10 @@ async def query_endpoint(request: QueryRequest):
             rag_system.ask,
             query=request.query,
             top_k=request.top_k,
-            include_sources=request.include_sources
+            include_sources=request.include_sources,
+            session_id=request.session_id,
+            message_index=request.message_index,
+            message_id=request.message_id
         )
         
         processing_time = time.time() - start_time
@@ -304,6 +309,195 @@ async def stats_endpoint():
         uptime_seconds=uptime,
         vector_store_info=vector_store_info
     )
+
+
+@app.post("/api/feedback",
+          response_model=FeedbackResponse,
+          tags=["Feedback"],
+          summary="Submit user feedback on responses")
+async def feedback_endpoint(request: FeedbackRequest):
+    """
+    Submit user feedback on assistant responses.
+    
+    - Positive feedback (helpful=true): Simply recorded, not logged
+    - Negative feedback (helpful=false): Logged as unanswered question with user feedback
+    
+    This enables continuous improvement of the system by tracking
+    which responses users found unhelpful.
+    """
+    global rag_system
+    
+    if rag_system is None or not rag_system.enable_logging:
+        return FeedbackResponse(
+            success=True,
+            message_id=request.message_id,
+            logged=False,
+            message="Feedback received (logging disabled)"
+        )
+    
+    # Only log negative feedback
+    if not request.helpful:
+        try:
+            # Log the question with user feedback
+            log_id = rag_system.logger.log_question(
+                query=request.query,
+                model_response=request.response,
+                detection_source="user_negative_feedback",
+                user_feedback={
+                    "flagged_at": time.time(),
+                    "flag_reason": request.flag_reason or "not_helpful",
+                    "free_text_feedback": request.free_text_feedback
+                },
+                session_id=request.session_id,
+                message_index=request.message_index,
+                message_id=request.message_id,
+                model_version=f"{rag_system.llm_provider}/{rag_system.model_name}"
+            )
+            
+            return FeedbackResponse(
+                success=True,
+                message_id=request.message_id,
+                logged=True,
+                log_entry_id=log_id,
+                message="Thank you for your feedback! We'll work to improve this answer."
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to log feedback: {str(e)}"
+            )
+    else:
+        # Positive feedback - just acknowledge
+        return FeedbackResponse(
+            success=True,
+            message_id=request.message_id,
+            logged=False,
+            message="Thank you for your feedback!"
+        )
+
+
+@app.get("/api/admin/unanswered",
+         response_model=UnansweredQuestionsResponse,
+         tags=["Admin"],
+         summary="Get unanswered questions (Admin only)")
+async def get_unanswered_questions(
+    limit: int = 50,
+    offset: int = 0,
+    min_confidence: Optional[float] = None,
+    max_confidence: Optional[float] = None,
+    detection_source: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    resolution_status: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: str = "timestamp",
+    sort_order: str = "desc"
+):
+    """
+    Retrieve logged unanswered or low-confidence questions.
+    
+    **Query Parameters:**
+    - `limit`: Maximum number of results (default: 50, max: 500)
+    - `offset`: Pagination offset
+    - `min_confidence`: Filter for confidence >= this value
+    - `max_confidence`: Filter for confidence < this value  
+    - `detection_source`: Filter by source (auto_low_confidence, user_negative_feedback, etc.)
+    - `date_from`: Filter for dates >= this (ISO 8601)
+    - `date_to`: Filter for dates <= this (ISO 8601)
+    - `resolution_status`: Filter by status (pending, reviewed, etc.)
+    - `search`: Full-text search in query field
+    - `sort_by`: Field to sort by (timestamp or confidence)
+    - `sort_order`: Sort direction (asc or desc)
+    
+    **Note:** This endpoint should be protected with authentication in production.
+    For now, it's open for development purposes.
+    """
+    global rag_system
+    
+    if rag_system is None or not rag_system.enable_logging or not rag_system.logger:
+        return UnansweredQuestionsResponse(
+            success=False,
+            total_count=0,
+            returned_count=0,
+            offset=offset,
+            questions=[],
+            statistics={}
+        )
+    
+    try:
+        # Limit maximum results to prevent abuse
+        limit = min(limit, 500)
+        
+        result = rag_system.logger.query_logs(
+            limit=limit,
+            offset=offset,
+            min_confidence=min_confidence,
+            max_confidence=max_confidence,
+            detection_source=detection_source,
+            date_from=date_from,
+            date_to=date_to,
+            resolution_status=resolution_status,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+        
+        return UnansweredQuestionsResponse(
+            success=True,
+            total_count=result['total_count'],
+            returned_count=result['returned_count'],
+            offset=result['offset'],
+            questions=result['questions'],
+            statistics=result['statistics']
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to query logs: {str(e)}"
+        )
+
+
+@app.get("/api/admin/unanswered/stats",
+         response_model=UnansweredStatsResponse,
+         tags=["Admin"],
+         summary="Get unanswered questions statistics")
+async def get_unanswered_stats(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None
+):
+    """
+    Get high-level statistics about unanswered questions.
+    
+    Returns time-series trends, confidence distributions, and top failing queries.
+    Useful for dashboard visualizations.
+    
+    **Query Parameters:**
+    - `date_from`: Filter for dates >= this (ISO 8601)
+    - `date_to`: Filter for dates <= this (ISO 8601)
+    """
+    global rag_system
+    
+    if rag_system is None or not rag_system.enable_logging or not rag_system.logger:
+        return UnansweredStatsResponse(
+            success=False,
+            statistics={}
+        )
+    
+    try:
+        stats = rag_system.logger.get_statistics(
+            date_from=date_from,
+            date_to=date_to
+        )
+        
+        return UnansweredStatsResponse(
+            success=True,
+            statistics=stats
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get statistics: {str(e)}"
+        )
 
 
 @app.exception_handler(Exception)
