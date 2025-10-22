@@ -1,6 +1,8 @@
 # Python
 __pycache__/
-/data/*
+server/__pycache__/
+server/src/__pycache__/
+server/data/*
 *.py[cod]
 *$py.class
 *.so
@@ -26,6 +28,7 @@ MANIFEST
 
 # Virtual Environment
 venv/
+server/venv/
 env/
 ENV/
 env.bak/
@@ -48,6 +51,8 @@ notebooks/.ipynb_checkpoints/
 .env
 .env.local
 .env.*.local
+server/.env
+server/.env.local
 
 # Data files (scraped content)
 data/raw_pages/*.html
@@ -55,6 +60,11 @@ data/raw_pages/*.txt
 data/processed/
 data/*.csv
 data/*.json
+server/data/raw_pages/*.html
+server/data/raw_pages/*.txt
+server/data/processed/
+server/data/*.csv
+server/data/*.json
 
 # URL lists
 urls.txt
