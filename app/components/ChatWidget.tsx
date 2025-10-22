@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Maximize2, Minimize2, X, MessageCircle } from "lucide-react";
+import { Send, Maximize2, Minimize2, X, MessageCircle, ThumbsUp, ThumbsDown } from "lucide-react";
 
 type ChatState = "collapsed" | "normal" | "fullscreen";
 
@@ -11,6 +11,8 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  query?: string; // Store the query for feedback
+  feedback?: 'helpful' | 'not_helpful' | null;
 }
 
 /**
@@ -31,6 +33,8 @@ export const ChatWidget = () => {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const [messageCounter, setMessageCounter] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -62,6 +66,9 @@ export const ChatWidget = () => {
     setIsLoading(true);
     setError(null);
 
+    const currentMessageIndex = messageCounter;
+    setMessageCounter(prev => prev + 1);
+
     try {
       // Send to FastAPI backend
       const response = await fetch("http://localhost:8000/api/query", {
@@ -70,7 +77,10 @@ export const ChatWidget = () => {
         body: JSON.stringify({ 
           query: userMessage.content,
           top_k: 3,
-          include_sources: false
+          include_sources: false,
+          session_id: sessionId,
+          message_index: currentMessageIndex,
+          message_id: userMessage.id
         }),
       });
 
@@ -85,6 +95,8 @@ export const ChatWidget = () => {
         role: "assistant",
         content: data.answer || "I received your message!",
         timestamp: new Date(),
+        query: userMessage.content,
+        feedback: null,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -109,6 +121,47 @@ export const ChatWidget = () => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleFeedback = async (messageId: string, feedbackType: 'helpful' | 'not_helpful') => {
+    // Update UI optimistically
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId ? { ...msg, feedback: feedbackType } : msg
+      )
+    );
+
+    try {
+      const message = messages.find(m => m.id === messageId);
+      if (!message || !message.query) return;
+
+      const response = await fetch("http://localhost:8000/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message_id: messageId,
+          helpful: feedbackType === 'helpful',
+          query: message.query,
+          response: message.content,
+          session_id: sessionId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit feedback");
+      }
+
+      // Success - feedback is already updated in UI
+      console.log("Feedback submitted successfully");
+    } catch (err) {
+      console.error("Failed to submit feedback:", err);
+      // Revert optimistic update on error
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, feedback: null } : msg
+        )
+      );
     }
   };
 
@@ -285,31 +338,75 @@ export const ChatWidget = () => {
                       message.role === "user" ? "justify-end" : "justify-start"
                     }`}
                   >
-                    <div
-                      className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-                        message.role === "user"
-                          ? "bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(217_91%_60%)] text-white"
-                          : "bg-muted text-foreground"
-                      }`}
-                      style={{
-                        boxShadow: message.role === "user" 
-                          ? "0 10px 40px -10px hsl(262 83% 58% / 0.2)" 
-                          : "0 4px 20px -2px hsl(240 10% 15% / 0.1)",
-                      }}
-                    >
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {message.content}
-                      </p>
-                      <span className={`text-xs mt-1 block ${
-                        message.role === "user" 
-                          ? "text-white/70" 
-                          : "text-muted-foreground"
-                      }`}>
-                        {message.timestamp.toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </span>
+                    <div className="flex flex-col gap-2 max-w-[80%]">
+                      <div
+                        className={`px-4 py-3 rounded-2xl ${
+                          message.role === "user"
+                            ? "bg-gradient-to-r from-[hsl(262_83%_58%)] to-[hsl(217_91%_60%)] text-white"
+                            : "bg-muted text-foreground"
+                        }`}
+                        style={{
+                          boxShadow: message.role === "user" 
+                            ? "0 10px 40px -10px hsl(262 83% 58% / 0.2)" 
+                            : "0 4px 20px -2px hsl(240 10% 15% / 0.1)",
+                        }}
+                      >
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          {message.content}
+                        </p>
+                        <span className={`text-xs mt-1 block ${
+                          message.role === "user" 
+                            ? "text-white/70" 
+                            : "text-muted-foreground"
+                        }`}>
+                          {message.timestamp.toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </span>
+                      </div>
+                      
+                      {/* Feedback buttons for assistant messages */}
+                      {message.role === "assistant" && (
+                        <div className="flex gap-2 ml-1">
+                          <button
+                            onClick={() => handleFeedback(message.id, 'helpful')}
+                            className={`p-1.5 rounded-lg transition-all hover:bg-muted ${
+                              message.feedback === 'helpful' 
+                                ? 'bg-green-100 dark:bg-green-900/30' 
+                                : 'hover:scale-110'
+                            }`}
+                            title="Helpful"
+                            aria-label="Mark as helpful"
+                          >
+                            <ThumbsUp 
+                              className={`w-4 h-4 ${
+                                message.feedback === 'helpful'
+                                  ? 'fill-green-600 text-green-600 dark:fill-green-400 dark:text-green-400'
+                                  : 'text-muted-foreground'
+                              }`}
+                            />
+                          </button>
+                          <button
+                            onClick={() => handleFeedback(message.id, 'not_helpful')}
+                            className={`p-1.5 rounded-lg transition-all hover:bg-muted ${
+                              message.feedback === 'not_helpful' 
+                                ? 'bg-red-100 dark:bg-red-900/30' 
+                                : 'hover:scale-110'
+                            }`}
+                            title="Not helpful"
+                            aria-label="Mark as not helpful"
+                          >
+                            <ThumbsDown 
+                              className={`w-4 h-4 ${
+                                message.feedback === 'not_helpful'
+                                  ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400'
+                                  : 'text-muted-foreground'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 ))}
