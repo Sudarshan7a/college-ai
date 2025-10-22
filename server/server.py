@@ -49,9 +49,20 @@ async def lifespan(app: FastAPI):
         
         rag_system = CollegeRAG(use_reranker=True)
         
+        # Verify RAG system loaded correctly
+        if rag_system is None:
+            raise Exception("RAG system initialization returned None")
+        
+        if not hasattr(rag_system, 'vectorstore') or rag_system.vectorstore is None:
+            raise Exception("Vector store not initialized properly")
+        
+        if not hasattr(rag_system.vectorstore, 'index') or rag_system.vectorstore.index is None:
+            raise Exception("FAISS index not loaded - vector store may be empty or corrupted")
+        
         print("\n✅ RAG system loaded successfully!")
-        print(f"  📊 Vector Store: {rag_system.vectorstore.total_vectors} vectors")
-        print(f"  🎯 Re-ranker: Enabled")
+        total_vecs = rag_system.vectorstore.total_vectors
+        print(f"  📊 Vector Store: {total_vecs} vectors")
+        print(f"  🎯 Re-ranker: {'Enabled' if hasattr(rag_system.vectorstore, 'reranker') and rag_system.vectorstore.reranker else 'Disabled'}")
         print(f"  🤖 LLM: {rag_system.model_name}")
         
         server_start_time = time.time()
