@@ -1,6 +1,12 @@
 # Ignore github prompt files
 .github/prompts/*.prompt.md
 
+# Ignore vite file 
+vite/*
+
+# Ignore node modules
+app/node_modules/
+
 # Python
 __pycache__/
 server/__pycache__/
