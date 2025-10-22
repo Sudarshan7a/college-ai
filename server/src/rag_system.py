@@ -303,13 +303,39 @@ class CollegeRAG:
         )
         
         overall_confidence = confidence_metrics['overall_score']
+        llm_uncertainty = confidence_metrics.get('llm_uncertainty_indicators', [])
         
-        # Log if confidence is below threshold
-        if self.enable_logging and self.logger and overall_confidence < self.confidence_threshold:
+        # Smart logging: Only log if LLM explicitly shows uncertainty
+        # This filters out casual chit-chat like "hello" or "bye"
+        should_log = False
+        log_reason = None
+        
+        if self.enable_logging and self.logger:
+            # Priority 1: LLM explicitly says it doesn't know (ALWAYS log)
+            if llm_uncertainty and len(llm_uncertainty) > 0:
+                should_log = True
+                log_reason = "llm_explicit_uncertainty"
+            # Priority 2: Very low confidence AND no results (likely off-topic)
+            elif overall_confidence < -2.0 and len(results) < 2:
+                should_log = True
+                log_reason = "very_low_confidence_no_results"
+            # Priority 3: Low confidence AND question is substantive (>10 chars, has question mark or keywords)
+            elif overall_confidence < self.confidence_threshold:
+                query_lower = query.lower()
+                is_substantive = (
+                    len(query) > 10 and
+                    ('?' in query or 
+                     any(word in query_lower for word in ['what', 'where', 'when', 'why', 'how', 'which', 'who', 'tell', 'explain', 'describe']))
+                )
+                if is_substantive:
+                    should_log = True
+                    log_reason = "low_confidence_substantive_question"
+        
+        if should_log:
             self.logger.log_question(
                 query=query,
                 model_response=answer,
-                detection_source="auto_low_confidence",
+                detection_source=log_reason,
                 confidence_metrics=confidence_metrics,
                 retrieval_context={
                     "num_docs_returned": len(results),
@@ -322,7 +348,8 @@ class CollegeRAG:
                 message_id=message_id,
                 model_version=f"{self.llm_provider}/{self.model_name}"
             )
-            print(f"[WARNING] Low confidence ({overall_confidence:.2f}) - Question logged")
+            print(f"[UNANSWERED] {log_reason}: {query[:50]}...")
+            print(f"[WARNING] Confidence: {overall_confidence:.2f}, Uncertainty indicators: {len(llm_uncertainty)} - Question logged")
         
         result = {
             "answer": answer,
