@@ -7,6 +7,10 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
+# Load environment variables from .env.local
+from dotenv import load_dotenv
+load_dotenv('.env.local')
+
 import time
 import asyncio
 from typing import Optional
