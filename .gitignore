@@ -5,7 +5,12 @@
 vite/*
 
 # Ignore node modules
-app/node_modules/
+node_modules/
+**/node_modules/
+
+# pnpm artifacts
+pnpm-lock.yaml
+.pnpm/
 
 # Python
 __pycache__/
