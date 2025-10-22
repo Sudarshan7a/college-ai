@@ -14,7 +14,8 @@ IS_COLAB = os.path.exists('/content/drive')
 if IS_COLAB:
     BASE_PATH = "/content/drive/MyDrive/collegeAi"
 else:
-    BASE_PATH = "."
+    # Get the server directory (parent of src)
+    BASE_PATH = str(Path(__file__).parent.parent)
 
 # Sitemap Index URL (automatically extracts all sitemaps)
 SITEMAP_INDEX = "https://sdit.ac.in/sitemap_index.xml"
