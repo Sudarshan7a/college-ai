@@ -1,3 +1,6 @@
+# Ignore github prompt files
+.github/prompts/*.prompt.md
+
 # Python
 __pycache__/
 server/__pycache__/
