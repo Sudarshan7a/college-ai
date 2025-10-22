@@ -44,6 +44,7 @@ class QueryResponse(BaseModel):
     sources: List[Source] = Field(default_factory=list, description="Source documents used")
     processing_time: float = Field(..., description="Processing time in seconds")
     model_used: str = Field(default="llama-3.3-70b-versatile", description="LLM model used")
+    confidence_score: float = Field(default=0.0, description="Confidence score of the answer")
     
     class Config:
         json_schema_extra = {

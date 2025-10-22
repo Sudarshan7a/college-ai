@@ -175,7 +175,8 @@ async def query_endpoint(request: QueryRequest):
             query=result["query"],
             sources=sources,
             processing_time=processing_time,
-            model_used=rag_system.model_name
+            model_used=rag_system.model_name,
+            confidence_score=result.get("confidence_score", 0.0)
         )
         
     except Exception as e:
