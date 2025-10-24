@@ -38,7 +38,14 @@ interface Message {
  */
 export const ChatWidget = () => {
   const [chatState, setChatState] = useState<ChatState>("collapsed");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "greeting",
+      role: "assistant",
+      content: "👋 Hello! I'm your College AI Assistant. I can help you with information about:\n\n• 🎓 Admissions & Eligibility\n• 📚 Departments & Programs\n• 💼 Placements & Career\n• 🏫 Campus Facilities\n• 🎉 Events & Activities\n\nWhat would you like to know?",
+      timestamp: new Date(),
+    },
+  ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -342,22 +349,6 @@ export const ChatWidget = () => {
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-background">
               <AnimatePresence mode="popLayout">
-                {messages.length === 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center justify-center h-full text-center px-4"
-                  >
-                    <MessageCircle className="w-16 h-16 text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold text-foreground mb-2">
-                      Welcome to College AI
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Ask me anything about the college, programs, admissions,
-                      or placements
-                    </p>
-                  </motion.div>
-                )}
 
                 {messages.map((message) => (
                   <motion.div
