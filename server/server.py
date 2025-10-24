@@ -9,7 +9,12 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 # Load environment variables from .env.local
 from dotenv import load_dotenv
-load_dotenv('.env.local')
+from pathlib import Path
+
+# Get the server directory (where this file is located)
+server_dir = Path(__file__).parent
+env_file = server_dir / '.env.local'
+load_dotenv(env_file)
 
 import time
 import asyncio
@@ -52,6 +57,9 @@ async def lifespan(app: FastAPI):
         print("  ⏳ Initializing LLM...")
         
         # Read LLM provider from environment (defaults to groq)
+        print(f"  🔍 DEBUG - LLM_PROVIDER env: '{os.getenv('LLM_PROVIDER')}'")
+        print(f"  🔍 DEBUG - LLM_MODEL env: '{os.getenv('LLM_MODEL')}'")
+        
         llm_provider = os.getenv("LLM_PROVIDER", "groq").lower()
         llm_model = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile" if llm_provider == "groq" else "gemini-1.5-flash")
         
@@ -172,24 +180,8 @@ async def query_endpoint(request: QueryRequest):
         query_count += 1
         total_response_time += processing_time
         
-        # Convert sources to Pydantic models
-        sources = [
-            Source(
-                category=src.get("category", "unknown"),
-                filename=src.get("filename", "unknown"),
-                text=src.get("text", ""),
-                distance=src.get("distance", 0.0),
-                rerank_score=src.get("rerank_score")
-            )
-            for src in result.get("sources", [])
-        ]
-        
         return QueryResponse(
             answer=result["answer"],
-            query=result["query"],
-            sources=sources,
-            processing_time=processing_time,
-            model_used=rag_system.model_name,
             confidence_score=result.get("confidence_score", 0.0)
         )
         

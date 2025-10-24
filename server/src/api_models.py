@@ -29,39 +29,21 @@ class QueryRequest(BaseModel):
 
 
 class Source(BaseModel):
-    """Source document metadata"""
+    """Source document metadata (minimal info for user display)"""
     category: str = Field(..., description="Document category")
     filename: str = Field(..., description="Source filename")
-    text: str = Field(..., description="Relevant text snippet")
-    distance: float = Field(..., description="Similarity distance (lower is better)")
-    rerank_score: Optional[float] = Field(None, description="Re-ranking score (higher is better)")
 
 
 class QueryResponse(BaseModel):
     """Response model for query endpoint"""
     answer: str = Field(..., description="Generated answer")
-    query: str = Field(..., description="Original query")
-    sources: List[Source] = Field(default_factory=list, description="Source documents used")
-    processing_time: float = Field(..., description="Processing time in seconds")
-    model_used: str = Field(default="llama-3.3-70b-versatile", description="LLM model used")
     confidence_score: float = Field(default=0.0, description="Confidence score of the answer")
     
     class Config:
         json_schema_extra = {
             "example": {
                 "answer": "The Computer Science Department has excellent placement statistics...",
-                "query": "What are the placement statistics?",
-                "sources": [
-                    {
-                        "category": "placements",
-                        "filename": "placement-statistics.txt",
-                        "text": "Computer Science Department had 95% placement...",
-                        "distance": 0.753,
-                        "rerank_score": 0.921
-                    }
-                ],
-                "processing_time": 1.234,
-                "model_used": "llama-3.3-70b-versatile"
+                "confidence_score": 0.85
             }
         }
 
