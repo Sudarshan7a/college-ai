@@ -24,8 +24,8 @@ faiss-cpu>=1.7.4  # Use faiss-gpu if you have CUDA (much faster)
 
 # RAG (Retrieval-Augmented Generation) - LLM Integrations
 langchain-groq>=0.0.1  # For Groq LLMs
+langchain-google-genai>=3.0.0  # For Google Gemini (ENABLED)
 # langchain-openai>=0.0.1  # Uncomment if using OpenAI
-# langchain-google-genai>=0.0.1  # Uncomment if using Google Gemini
 
 # Utilities
 python-dotenv>=1.0.0

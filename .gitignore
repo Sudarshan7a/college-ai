@@ -8,6 +8,9 @@ vite/*
 node_modules/
 **/node_modules/
 
+#ignore server/data_23_10_25
+server/data_23_10_25/
+
 # pnpm artifacts
 pnpm-lock.yaml
 .pnpm/
