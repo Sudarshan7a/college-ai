@@ -5,9 +5,13 @@ Captures and persists questions that the RAG system couldn't answer with suffici
 import json
 import uuid
 import hashlib
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Literal
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 class UnansweredQuestionLogger:
     """
@@ -36,7 +40,7 @@ class UnansweredQuestionLogger:
             self.log_file.parent.mkdir(parents=True, exist_ok=True)
             if not self.log_file.exists():
                 self.log_file.touch()
-                print(f"[LOGGER] Created log file: {self.log_file}")
+                logger.info(f"Created log file: {self.log_file}")
         elif storage_backend == "postgres":
             if not db_connection_string:
                 raise ValueError("PostgreSQL backend requires db_connection_string")
@@ -107,7 +111,7 @@ class UnansweredQuestionLogger:
         elif self.backend == "postgres":
             self._insert_to_postgres(record)
         
-        print(f"[UNANSWERED] {detection_source}: {query[:60]}...")
+        logger.info(f"[UNANSWERED] {detection_source}: {query[:60]}...")
         return log_id
     
     def update_with_feedback(
@@ -162,7 +166,7 @@ class UnansweredQuestionLogger:
                     f.write(json.dumps(record) + '\n')
             
             temp_file.replace(self.log_file)
-            print(f"[LOGGER] Updated record for message_id: {message_id}")
+            logger.info(f"Updated record for message_id: {message_id}")
         
         return updated
     
